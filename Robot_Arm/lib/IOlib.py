@@ -43,7 +43,8 @@ def close_readadc(adcnum, val, times=3):
 
 class IOUnit:
 
-    _inChannel = None
+    _inChannelMaster = None
+    _inChannelSlave = None
     _outF = None
     _outB = None
     _pwmF=None
@@ -51,12 +52,14 @@ class IOUnit:
     _pwmB=None
     _dutyB = None
 
-    _potVal = 0
+    _potValMaster = 0
+    _potValSlave = 0
 
-    def __init__(self, inChannel=None, outF=None, outB=None, freq=None, dutyF=None, dutyB=None):
-        if(inChannel!=None):
-            self._inChannel = inChannel
-            #spi pins already setup
+    def __init__(self, inChannelMaster=None, inChannelSlave=None, outF=None, outB=None, freq=None, dutyF=None, dutyB=None):
+        if((inChannelMaster!=None) & (inChannelSlave!=None)):
+            self._inChannelMaster = inChannelMaster
+            self._inChannelSlave = inChannelSlave
+            #spi pins already setup by this point to read
         if(outF!=None):
             self._outF = outF
             io.setup(self._outF, io.OUT)
@@ -79,11 +82,15 @@ class IOUnit:
         io.output(self._outB, state)
 
     #for in
-    def inADC(self):
-        return readadc(self._inChannel)
+    def inADCMaster(self):
+        return readadc(self._inChannelMaster)
+    def inADCSlave(self):
+        return readadc(self._inChannelSlave)
 
-    def inCloseADC(self, times=3):
-        return close_readadc(self._inChannel, self._potVal, times)
+    def inCloseADCMaster(self, times=3):
+        return close_readadc(self._inChannelMaster, self._potValMaster, times)
+    def inCloseADCSlave(self, times=3):
+        return close_readadc(self._inChannelSlave, self._potValSlave, times)
 
     def pwmFStart(self):
         self._pwmF.start(self._dutyF)
@@ -101,4 +108,5 @@ class IOUnit:
         self._pwmF.stop()
     def pwmBStop(self):
         self._pwmB.stop()
+
 #end        
