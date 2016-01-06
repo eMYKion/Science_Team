@@ -65,16 +65,13 @@ class IOUnit:
     _dutyB = None
     _potValMaster = 0
     _potValSlave = 0
-    _offset = 0#potentiometer
-
+    _offset = 0 #potentiometer initial difference
     
-    _slope=0
-    _intercept=0
+    _slope= 0
+    _intercept = 0
 
-    def dutyFunctionPos(self):
-        return self._slope*self._diff+self._intercept
-    def dutyFunctionNeg(self):
-        return -self._slope*self._diff+self._intercept
+    def dutyFunction(self):
+        return abs(self._slope*self._diff)+self._intercept
 
     def __init__(self, inChannelMaster=None, inChannelSlave=None, outF=None, outB=None, brake=None, freq=None, dutyF=None, dutyB=None):
         if((inChannelMaster!=None) & (inChannelSlave!=None)):
