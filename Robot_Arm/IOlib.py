@@ -10,6 +10,7 @@ import RPi.GPIO as io
 #remember to setup SPI PINS
 spi = spidev.SpiDev()   #make spi object
 spi.open(0,0)    #open spi port 0 on device 0
+spi.max_speed_hz=(3000000) #set SPI speed
 
 #io modes
 IO_BCM = 0b101
@@ -23,7 +24,7 @@ def IOinit(mode):      #IO_BCM or IO_BOARD
 def IOquit():
     io.cleanup()
 
-# read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
+# read SPI data from MCP3008 chip, 8 possible channels (0 thru 7)
 def readadc(adcnum):
     if ((adcnum > 7) or (adcnum < 0)):
         return -1
@@ -41,7 +42,7 @@ def close_readadc(adcnum, val, times=3):
     return final
 
 
-def avg_readadc(adcnum, times=50):
+def avg_readadc(adcnum, times=5):
     total = 0
     for x in range (0, 3):
         discard = readadc(adcnum)
@@ -56,22 +57,20 @@ def avg_readadc(adcnum, times=50):
 class IOUnit:
     _inChannelMaster = None
     _inChannelSlave = None
-    _outF = None
-    _outB = None
-    _brake = None
+    _outF = None #GPIO pin
+    _outB = None #GPIO pin
+    _brake = None #GPIO pin
     _pwmF=None
     _dutyF = None
     _pwmB=None
     _dutyB = None
     _potValMaster = 0
     _potValSlave = 0
-    _offset = 0 #potentiometer initial difference
-    
-    _slope= 0
-    _intercept = 0
-
-    def dutyFunction(self):
-        return abs(self._slope*self._diff)+self._intercept
+    _offset = 0 #initial difference between the slave and the master
+    _tolerance = 0 #bound on difference, less than this -> no movement
+    _tol_max = 0 #bound on pot difference, less than this -> PWM movement, mofre than this -> full power
+    _slope = 0 #for PWM accel/decel function
+    _intercept = 0 #for PWM accel/decel function
 
     def __init__(self, inChannelMaster=None, inChannelSlave=None, outF=None, outB=None, brake=None, freq=None, dutyF=None, dutyB=None):
         if((inChannelMaster!=None) & (inChannelSlave!=None)):
@@ -108,10 +107,10 @@ class IOUnit:
         return close_readadc(self._inChannelMaster, self._potValMaster, times)
     def inCloseADCSlave(self, times=3):
         return close_readadc(self._inChannelSlave, self._potValSlave, times)
-    def inavgADCMaster(self, times=50):
-        return avg_readadc(self._inChannelMaster, times)
-    def inavgADCSlave(self, times=50):
-        return avg_readadc(self._inChannelSlave, times)
+    def inavgADCMaster(self):
+        return avg_readadc(self._inChannelMaster)
+    def inavgADCSlave(self):
+        return avg_readadc(self._inChannelSlave)
     def pwmFStart(self):
         self._pwmF.start(0)
     def pwmBStart(self):
@@ -122,6 +121,8 @@ class IOUnit:
     def pwmBChangeDutyCycle(self, duty):
         self._dutyB = duty
         self._pwmB.ChangeDutyCycle(duty)
+    def dutyFunction(self):
+        return self._slope*abs(self._diff)+self._intercept
     def brakeon(self):
         self._pwmF.ChangeDutyCycle(0)
         self._pwmB.ChangeDutyCycle(0)

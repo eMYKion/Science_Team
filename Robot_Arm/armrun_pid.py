@@ -1,7 +1,9 @@
 #shoulder + elbow on/off code, using 4 pots 
 
-from IOlib import *
+from PIDlib import *
 import time
+
+
 
 EL_PIN_FORWARD = 21
 EL_PIN_BACKWARD = 16
@@ -37,62 +39,53 @@ el.pwmBStart()
 sh.pwmFStart()
 sh.pwmBStart()
 
-el._k_pos = 
-el._k_vel = 
-el._k_accel = 
-sh._k_pos = 
-sh._k_vel = 
-sh._k_accel = 
+#set constants
+el.setPID(4, 0.5, 0)
+sh.setPID(1, 0.2, 0)
 
 sh._offset = round(sh.inavgADCMaster(50) - sh.inavgADCSlave(50), 3)
 el._offset = round(el.inavgADCMaster(50) - el.inavgADCSlave(50), 3)
+print(el._offset)
 
-el._positionMaster = inavgADCMaster()
-el._positionSlave = inavgadjustADCSlave()
-sh._positionMaster = inavgADCMaster()
-sh._positionSlave = inavgadjustADCSlave()
+el._positionMaster = el.inavgADCMaster()
+el._positionSlave = el.inavgadjustADCSlave()
+sh._positionMaster = el.inavgADCMaster()
+sh._positionSlave = el.inavgadjustADCSlave()
 
 def run_main():
-  try: 
+  try:
+    oldtime  = time.time()
     while 1:
-      time = time.clock()
-      el._positionMaster = el.inavgADCMaster()
-      el._velocityMaster = (el._positionMaster - el._oldpositionMaster)/time
-      el._accelerationMaster = (el._velocityMaster - el._oldvelocityMaster)/time
       
-      el._positionSlave = el.inavgadjustADCSlave()
-      el._velocitySlave = (el._positionSlave - el._oldpositionSlave)/time
-      el._accelerationSlave = (el._velocitySlave - el._oldvelocitySlave)/time
+      newtime = time.time()
+      dtime = newtime - oldtime
+      oldtime = newtime
 
-      sh._positionMaster = sh.inavgADCMaster()
-      sh._velocityMaster = (sh._positionMaster - sh._oldpositionMaster)/time
-      sh._accelerationMaster = (sh._velocityMaster - sh._oldvelocityMaster)/time
       
-      sh._positionSlave = el.inavgadjustADCSlave()
-      sh._velocitySlave = (sh._positionSlave - sh._oldpositionSlave)/time
-      sh._accelerationSlave = (sh._velocitySlave - sh._oldvelocitySlave)/time
+      
+      el.Pidval_update(dtime)
+      sh.Pidval_update(dtime)
+    
 
-      sh.Pidval_update()
-      el.Pidval_update()
-
+      print(el._PIDval, el._positionMaster, el._velocityMaster, el._positionSlave, el._velocitySlave)
+      
+      
       #need to fix the signs
       if sh._PIDval>0:
         sh.brakeoff()
         if sh._PIDval>100:
-          sh.pwmFChangeDutyCycle(100)
+          sh.pwmBChangeDutyCycle(100)
         else:
-          sh.pwmFChangeDutyCycle(sh._PIDval)
+          sh.pwmBChangeDutyCycle(sh._PIDval)
       elif sh._PIDval<0:
         sh.brakeoff()
         if sh._PIDval<-100:
-          sh.pwmBChangeDutyCycle(100)
+          sh.pwmFChangeDutyCycle(100)
         else:
-          sh.pwmBChangeDutyCycle(-sh._PIDval)
+          sh.pwmFChangeDutyCycle(sh._PIDval)
       else:
-        if sh._positionMaster == sh._positionSlave:
-          sh.brakeon()
-        else:
-          sh.pwmFChangeDutyCycle(0)
+        sh.brakeon()
+        
 
       if el._PIDval>0:
         el.brakeoff()
@@ -105,23 +98,16 @@ def run_main():
         if el._PIDval<-100:
           el.pwmBChangeDutyCycle(100)
         else:
-          el.pwmBChangeDutyCycle(-el._PIDval)
+          el.pwmBChangeDutyCycle(el._PIDval)
       else:
-        if abs(el._positionMaster - el._positionSlave)<2:
-          el.brakeon()
-        else:
-          el.pwmFChangeDutyCycle(0)
+        el.brakeon()
         
 
-      el._oldpositionMaster = el._positionMaster
-      el._oldvelocityMaster = el._velocityMaster
-      el._oldpositionSlave = el._positionSlave
-      el._oldvelocitySlave = el._velocitySlave
+      el.setNewToOld()
+      sh.setNewToOld()
 
-      sh._oldpositionMaster = sh._positionMaster
-      sh._oldvelocityMaster = sh._velocityMaster
-      sh._oldpositionSlave = sh._positionSlave
-      sh._oldvelocitySlave = sh._velocitySlave
+      
+      
   except KeyboardInterrupt:
     el.pwmFStop()
     el.pwmBStop()

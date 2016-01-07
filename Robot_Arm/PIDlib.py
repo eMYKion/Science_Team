@@ -10,6 +10,7 @@ import RPi.GPIO as io
 #remember to setup SPI PINS
 spi = spidev.SpiDev()   #make spi object
 spi.open(0,0)    #open spi port 0 on device 0
+spi.max_speed_hz=(3000000) #set SPI speed
 
 #io modes
 IO_BCM = 0b101
@@ -43,8 +44,6 @@ def close_readadc(adcnum, val, times=3):
 
 def avg_readadc(adcnum, times):
     total = 0
-    for x in range (0, 3):
-        discard = readadc(adcnum)
     for x in range (0, times):
         total += readadc(adcnum)
     return total*1.0/times
@@ -84,9 +83,8 @@ class IOUnit:
     _k_accel = 0
 
     def dutyFunctionPos(self):
-        return self._slope*self._diff+self._intercept
-    def dutyFunctionNeg(self):
-        return -self._slope*self._diff+self._intercept
+        return abs(self._slope*self._diff)+self._intercept
+    
 
     def __init__(self, inChannelMaster=None, inChannelSlave=None, outF=None, outB=None, brake=None, freq=None, dutyF=None, dutyB=None):
         if((inChannelMaster!=None) & (inChannelSlave!=None)):
@@ -123,24 +121,24 @@ class IOUnit:
         return close_readadc(self._inChannelMaster, self._potValMaster, times)
     def inCloseADCSlave(self, times=3):
         return close_readadc(self._inChannelSlave, self._potValSlave, times)
-    def inavgADCMaster(self, times=10):
+    def inavgADCMaster(self, times=100):
         return round(avg_readadc(self._inChannelMaster, times), 3)
-    def inavgADCSlave(self, times=10):
+    def inavgADCSlave(self, times=100):
         return round(avg_readadc(self._inChannelSlave, times), 3)
-    def inavgadjustADCSlave(self, times=10):
+    def inavgadjustADCSlave(self, times=100):
         return round(avg_readadc(self._inChannelSlave, times) - self._offset, 3)
     def pwmFStart(self):
         self._pwmF.start(0)
     def pwmBStart(self):
         self._pwmB.start(0)
     def pwmFChangeDutyCycle(self, duty):
-        self._dutyF = duty
+        self._dutyF = abs(duty)
         self._pwmB.ChangeDutyCycle(0)
-        self._pwmF.ChangeDutyCycle(duty)
+        self._pwmF.ChangeDutyCycle(abs(duty))
     def pwmBChangeDutyCycle(self, duty):
-        self._dutyB = duty
+        self._dutyB = abs(duty)
         self._pwmF.ChangeDutyCycle(0)
-        self._pwmB.ChangeDutyCycle(duty)
+        self._pwmB.ChangeDutyCycle(abs(duty))
     def brakeon(self):
         self._pwmF.ChangeDutyCycle(0)
         self._pwmB.ChangeDutyCycle(0)
@@ -154,8 +152,30 @@ class IOUnit:
         self._pwmB.stop()
 
     #for PID
-    def Pidval_update(self):
-        self._PIDval = self._k_pos*(self._positionMaster-self._positionSlave) + self._k_vel*(self._velocityMaster-self._velocitySlave) + self._k_accel*(self._accelerationMaster-self._accelerationSlave)
+
+    def setPID(self, P, V, A):
+        self._k_pos = P
+        self._k_vel = V
+        self._k_accel = A 
+         
+    def setNewToOld(self):
+        self._oldpositionMaster = self._positionMaster
+        self._oldvelocityMaster = self._velocityMaster
+        self._oldpositionSlave = self._positionSlave
+        self._oldvelocitySlave = self._velocitySlave
+    def Pidval_update(self, time):
+        self._positionMaster = round(self.inavgADCMaster(), 3)
+        self._velocityMaster = (self._positionMaster - self._oldpositionMaster)/time
+        self._accelerationMaster = (self._velocityMaster - self._oldvelocityMaster)/time
+          
+        self._positionSlave = round(self.inavgADCSlave(), 3)
+        self._velocitySlave = (self._positionSlave - self._oldpositionSlave)/time
+        self._accelerationSlave = (self._velocitySlave - self._oldvelocitySlave)/time
+        
+        self._PIDval = round(self._k_pos*(self._positionMaster-self._positionSlave - self._offset) + self._k_vel*(self._velocityMaster-self._velocitySlave) + self._k_accel*(self._accelerationMaster-self._accelerationSlave), 2)
+
+        
+        
 #end
 
 

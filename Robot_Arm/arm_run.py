@@ -34,22 +34,13 @@ sh = IOUnit(SH_IN_CHANNEL_MASTER, SH_IN_CHANNEL_SLAVE, SH_PIN_FORWARD, SH_PIN_BA
 
 el._tolerance = 2
 el._tol_max = 42
+el._slope = 100/(el._tol_max - el._tolerance)
+el._intercept = -el._tolerance*el._slope
+
 sh._tolerance = 2
 sh._tol_max = 42
-
-slope = 100/(tol_max - tolerance)
-intercept = -tolerance*slope
-
-el._slope = 100/(el._tol_max - el._tolerance)
-sh._slope = 100/(el._tol_max - el._tolerance)
-
-sh._intercept = intercept
-el._intercept = intercept
-
-
-
-
-
+sh._slope = 100/(sh._tol_max - sh._tolerance)
+sh._intercept = -sh._tolerance*sh._slope
 
 el.pwmFStart()
 el.pwmBStart()
@@ -105,34 +96,32 @@ def run_main():
       else:
       	#still
         print('EL STILL')
-        el.pwmBChangeDutyCycle(0)
-        el.pwmFChangeDutyCycle(0)
         el.brakeon()
 
 
 
         
-      if (sh._diff < -1*el._tolerance):
+      if (sh._diff < -1*sh._tolerance):
       	#forward
         print('SH FORWARD')
         sh.brakeoff()
         sh.pwmBChangeDutyCycle(0)
 
-        if(sh._diff<-1*el._tol_max):
+        if(sh._diff<-1*sh._tol_max):
           sh.pwmFChangeDutyCycle(100)
         else:
           sh.pwmFChangeDutyCycle(sh.dutyFunction())
       	
-      elif(sh._diff > el._tolerance):
+      elif(sh._diff > sh._tolerance):
       	#backward
         print('SH BACKWARD')
         sh.brakeoff()
         sh.pwmFChangeDutyCycle(0)
 
-        if(sh._diff>el._tol_max):
+        if(sh._diff>sh._tol_max):
           sh.pwmBChangeDutyCycle(100)
         else:
-          sh.pwmFChangeDutyCycle(sh.dutyFunction())
+          sh.pwmBChangeDutyCycle(sh.dutyFunction())
       	
       else:
       	#still
@@ -140,8 +129,7 @@ def run_main():
         sh.brakeon()
 
 
-        
-      #time.sleep(0.1)
+
   except KeyboardInterrupt:
     el.pwmFStop()
     el.pwmBStop()
