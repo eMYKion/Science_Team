@@ -19,13 +19,8 @@ STEP = [[1, 0, 1, 0],
         [1, 0, 0, 1]]
 
 pos = 0
-<<<<<<< HEAD
 delay_max = 0.02
 delay_min = 0.005
-=======
-delay_max = 0.1
-delay_min = 0.01
->>>>>>> bea14978fc20bf2de6f2105c7c56bf9f4a87c32c
 k = 1.2
 
 def step(direction):
@@ -53,11 +48,6 @@ try:
             sleep = delay_min + (delay_max-delay_min)*(k**-x+k**(x+1-abs(steps)))
             time.sleep(sleep)
             print(sleep)
-<<<<<<< HEAD
-=======
-        time.sleep(0.1)
-        step(0)
->>>>>>> bea14978fc20bf2de6f2105c7c56bf9f4a87c32c
 except KeyboardInterrupt:
     step(0)
     io.cleanup()
