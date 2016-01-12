@@ -24,7 +24,7 @@ def IOinit(mode):      #IO_BCM or IO_BOARD
 def IOquit():
     io.cleanup()
 
-# read SPI data from MCP3008 chip, 8 possible channels (0 thru 7)
+# read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
 def readadc(adcnum):
     if ((adcnum > 7) or (adcnum < 0)):
         return -1
@@ -42,10 +42,8 @@ def close_readadc(adcnum, val, times=3):
     return final
 
 
-def avg_readadc(adcnum, times=5):
+def avg_readadc(adcnum, times):
     total = 0
-    for x in range (0, 3):
-        discard = readadc(adcnum)
     for x in range (0, times):
         total += readadc(adcnum)
     return total*1.0/times
@@ -53,24 +51,40 @@ def avg_readadc(adcnum, times=5):
 
 
 
-
 class IOUnit:
     _inChannelMaster = None
     _inChannelSlave = None
-    _outF = None #GPIO pin
-    _outB = None #GPIO pin
-    _brake = None #GPIO pin
+    _outF = None
+    _outB = None
+    _brake = None
     _pwmF=None
     _dutyF = None
     _pwmB=None
     _dutyB = None
-    _potValMaster = 0
-    _potValSlave = 0
-    _offset = 0 #initial difference between the slave and the master
-    _tolerance = 0 #bound on difference, less than this -> no movement
-    _tol_max = 0 #bound on pot difference, less than this -> PWM movement, mofre than this -> full power
-    _slope = 0 #for PWM accel/decel function
-    _intercept = 0 #for PWM accel/decel function
+    
+    _positionMaster = 0
+    _velocityMaster = 0
+    _accelerationMaster = 0
+    _positionSlave = 0
+    _velocitySlave = 0
+    _accelerationSlave = 0
+    #these are for calculating the velocity + acceleration
+    _oldpositionMaster = 0
+    _oldvelocityMaster = 0
+    _oldpositionSlave = 0
+    _oldvelocitySlave = 0
+
+    _PIDval = 0 #this is the value of the PID computed (a duty cycle)
+    
+    _offset = 0 #potentiometer difference between master and slave: master - slave
+    #these are the PID tuning constants
+    _k_pos = 0
+    _k_vel = 0
+    _k_accel = 0
+
+    def dutyFunctionPos(self):
+        return abs(self._slope*self._diff)+self._intercept
+    
 
     def __init__(self, inChannelMaster=None, inChannelSlave=None, outF=None, outB=None, brake=None, freq=None, dutyF=None, dutyB=None):
         if((inChannelMaster!=None) & (inChannelSlave!=None)):
@@ -107,22 +121,24 @@ class IOUnit:
         return close_readadc(self._inChannelMaster, self._potValMaster, times)
     def inCloseADCSlave(self, times=3):
         return close_readadc(self._inChannelSlave, self._potValSlave, times)
-    def inavgADCMaster(self):
-        return avg_readadc(self._inChannelMaster)
-    def inavgADCSlave(self):
-        return avg_readadc(self._inChannelSlave)
+    def inavgADCMaster(self, times=100):
+        return round(avg_readadc(self._inChannelMaster, times), 3)
+    def inavgADCSlave(self, times=100):
+        return round(avg_readadc(self._inChannelSlave, times), 3)
+    def inavgadjustADCSlave(self, times=100):
+        return round(avg_readadc(self._inChannelSlave, times) - self._offset, 3)
     def pwmFStart(self):
         self._pwmF.start(0)
     def pwmBStart(self):
         self._pwmB.start(0)
     def pwmFChangeDutyCycle(self, duty):
-        self._dutyF = duty
-        self._pwmF.ChangeDutyCycle(duty)
+        self._dutyF = abs(duty)
+        self._pwmB.ChangeDutyCycle(0)
+        self._pwmF.ChangeDutyCycle(abs(duty))
     def pwmBChangeDutyCycle(self, duty):
-        self._dutyB = duty
-        self._pwmB.ChangeDutyCycle(duty)
-    def dutyFunction(self):
-        return self._slope*abs(self._diff)+self._intercept
+        self._dutyB = abs(duty)
+        self._pwmF.ChangeDutyCycle(0)
+        self._pwmB.ChangeDutyCycle(abs(duty))
     def brakeon(self):
         self._pwmF.ChangeDutyCycle(0)
         self._pwmB.ChangeDutyCycle(0)
@@ -134,6 +150,32 @@ class IOUnit:
         self._pwmF.stop()
     def pwmBStop(self):
         self._pwmB.stop()
+
+    #for PID
+
+    def setPID(self, P, V, A):
+        self._k_pos = P
+        self._k_vel = V
+        self._k_accel = A 
+         
+    def setNewToOld(self):
+        self._oldpositionMaster = self._positionMaster
+        self._oldvelocityMaster = self._velocityMaster
+        self._oldpositionSlave = self._positionSlave
+        self._oldvelocitySlave = self._velocitySlave
+    def Pidval_update(self, time):
+        self._positionMaster = round(self.inavgADCMaster(), 3)
+        self._velocityMaster = (self._positionMaster - self._oldpositionMaster)/time
+        self._accelerationMaster = (self._velocityMaster - self._oldvelocityMaster)/time
+          
+        self._positionSlave = round(self.inavgADCSlave(), 3)
+        self._velocitySlave = (self._positionSlave - self._oldpositionSlave)/time
+        self._accelerationSlave = (self._velocitySlave - self._oldvelocitySlave)/time
+        
+        self._PIDval = round(self._k_pos*(self._positionMaster-self._positionSlave - self._offset) + self._k_vel*(self._velocityMaster-self._velocitySlave) + self._k_accel*(self._accelerationMaster-self._accelerationSlave), 2)
+
+        
+        
 #end
 
 
