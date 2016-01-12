@@ -1,6 +1,10 @@
 #shoulder + elbow on/off code, using 4 pots 
 
+<<<<<<< HEAD
 from lib.IOlib import *
+=======
+from IOlib import *
+>>>>>>> bea14978fc20bf2de6f2105c7c56bf9f4a87c32c
 import time
 
 EL_PIN_FORWARD = 21
