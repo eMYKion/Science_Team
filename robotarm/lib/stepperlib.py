@@ -18,14 +18,15 @@ class stepper():
     _coil_B2 = None
 
     _virtPos = None
+    _delay = None
 
-    _delayMax = 0.02
-    _delayMin = 0.005
-    _K = 1.2
+    #_delayMax = 0.02
+    #_delayMin = 0.005
+    #_K = 1.2
 
     _sequence = [[1, 0, 1, 0],[0, 1, 1, 0],[0, 1, 0, 1],[1, 0, 0, 1]]
     
-    def __init__(self, A1, A2, B1, B2):
+    def __init__(self, A1, A2, B1, B2, delay):
         
         self._coil_A1 = A1
         self._coil_A2 = A2
@@ -38,6 +39,9 @@ class stepper():
         io.setup(self._coil_A2, io.OUT)
         io.setup(self._coil_B1, io.OUT)
         io.setup(self._coil_B2, io.OUT)
+
+        
+        self._delay = delay
         
     def setPins(self, A1, A2, B1, B2):
         io.output(self._coil_A1, A1)
@@ -55,8 +59,10 @@ class stepper():
                 self._virtPos += steps/abs(steps)
                 
                 temp = self._sequence[self._virtPos%4]
+                
                 self.setPins(temp[0], temp[1], temp[2], temp[3])
                 
-                delay = self._delayMin + (self._delayMax-self._delayMin)*(self._K**-x+self._K**(x+1-abs(steps)))
-                time.sleep(delay)
+                #delay = self._delayMin + (self._delayMax-self._delayMin)*(self._K**-x+self._K**(x+1-abs(steps)))
+                
+                time.sleep(self._delay)
 
