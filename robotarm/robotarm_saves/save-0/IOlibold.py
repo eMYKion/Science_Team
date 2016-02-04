@@ -1,4 +1,5 @@
 
+
 #IO lib for Raspberry Pi in Robot Arm, Science Olympiad, December 2015
 
 #Authors: Mayank Mali and Peter Wilson
@@ -26,10 +27,12 @@ def IOquit():
 
 # read SPI data from MCP3008 chip, 8 possible channels (0 thru 7)
 def readadc(adcnum):
-    if ((adcnum > 7) or (adcnum < 0)):
-        return -1
-    r = spi.xfer2([1,(8+adcnum)<<4,0])
-    adcout = ((r[1]&3) << 8) + r[2]
+    adc = spi.xfer2([1,(8+adcnum)<<4,0])
+    adcout = ((adc[1]&3) << 8) + adc[2]
+    while adcout == 0:
+        print('SPI ERROR')
+        adc = spi.xfer2([1,(8+adcnum)<<4,0])
+        adcout = ((adc[1]&3) << 8) + adc[2]
     return adcout
 
 def close_readadc(adcnum, val, times=3):
@@ -44,8 +47,6 @@ def close_readadc(adcnum, val, times=3):
 
 def avg_readadc(adcnum, times=5):
     total = 0
-    for x in range (0, 3):
-        discard = readadc(adcnum)
     for x in range (0, times):
         total += readadc(adcnum)
     return total*1.0/times
@@ -73,7 +74,7 @@ class IOUnit:
     _intercept = 0 #for PWM accel/decel function
 
     def __init__(self, inChannelMaster=None, inChannelSlave=None, outF=None, outB=None, brake=None, freq=None, dutyF=None, dutyB=None):
-        if((inChannelMaster!=None) & (inChannelSlave!=None)):
+        if((inChannelMaster!=None) | (inChannelSlave!=None)):
             self._inChannelMaster = inChannelMaster
             self._inChannelSlave = inChannelSlave
             #spi pins already setup by this point to read
@@ -116,17 +117,27 @@ class IOUnit:
     def pwmBStart(self):
         self._pwmB.start(0)
     def pwmFChangeDutyCycle(self, duty):
+        
         self._dutyF = duty
         self._pwmF.ChangeDutyCycle(duty)
+        
+        return 1
     def pwmBChangeDutyCycle(self, duty):
+        
         self._dutyB = duty
         self._pwmB.ChangeDutyCycle(duty)
+        
+        return 1
     def dutyFunction(self):
         return self._slope*abs(self._diff)+self._intercept
     def brakeon(self):
+        
         self._pwmF.ChangeDutyCycle(0)
         self._pwmB.ChangeDutyCycle(0)
+        
         io.output(self._brake, 1)
+        
+        return 1
     def brakeoff(self):
         io.output(self._brake, 0)
         return 1
@@ -135,5 +146,4 @@ class IOUnit:
     def pwmBStop(self):
         self._pwmB.stop()
 #end
-
 

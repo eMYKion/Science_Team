@@ -56,15 +56,16 @@ class stepper():
         temp = self._sequence[(self._virtPos+1)%4]
         self.setPins(temp[0], temp[1], temp[2], temp[3])
         self._virtPos += direc
+            
         
         
     #has time.sleep()!!!
     def progress(self, steps):
-        for x in range(0, abs(steps)):
-            if(steps==0):
-                self.setPins(0,0,0,0)
-            else:
-                self.setPinsByOne(self, steps/abs(steps))
+        if(steps==0):
+            self.setPins(0,0,0,0)
+        else:
+            for x in range(0, abs(steps)):
+                self.setPinsByOne(steps/abs(steps))
                 #delay = self._delayMin + (self._delayMax-self._delayMin)*(self._K**-x+self._K**(x+1-abs(steps)))
                 self.delaySec()
             

@@ -1,6 +1,8 @@
 from lib.stepperlib import *
+from threading import *
 import sys
 
+io.setmode(io.BCM)
 COIL_A1 = 5
 COIL_A2 = 6
 COIL_B1 = 26
@@ -15,8 +17,12 @@ steps = int(sys.argv[1])
 
 
 thread = Thread(target=stepper1.progress, args=(steps,))
-thread.start()
-thread.join()
+
+try:
+    thread.start()
+    thread.join()
+except KeyboardInterrupt:
+    pass
 
 
 

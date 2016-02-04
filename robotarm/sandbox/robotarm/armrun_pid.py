@@ -40,8 +40,8 @@ sh.pwmFStart()
 sh.pwmBStart()
 
 #set constants
-el.setPID(4, 0.5, 0)
-sh.setPID(1, 0.2, 0)
+el.setPID(4, 0, 0)
+sh.setPID(1, 0, 0)
 
 sh._offset = round(sh.inavgADCMaster(50) - sh.inavgADCSlave(50), 3)
 el._offset = round(el.inavgADCMaster(50) - el.inavgADCSlave(50), 3)

@@ -43,11 +43,19 @@ class stepper():
         
         self._delay = delay
         
+    def delaySec(self):
+        time.sleep(self._delay)
+        
     def setPins(self, A1, A2, B1, B2):
         io.output(self._coil_A1, A1)
         io.output(self._coil_A2, A2)
         io.output(self._coil_B1, B1)
         io.output(self._coil_B2, B2)
+
+    def setPinsByOne(self, direc):
+        temp = self._sequence[(self._virtPos+1)%4]
+        self.setPins(temp[0], temp[1], temp[2], temp[3])
+        self._virtPos += direc
         
         
     #has time.sleep()!!!
@@ -56,13 +64,6 @@ class stepper():
             if(steps==0):
                 self.setPins(0,0,0,0)
             else:
-                self._virtPos += steps/abs(steps)
-                
-                temp = self._sequence[self._virtPos%4]
-                
-                self.setPins(temp[0], temp[1], temp[2], temp[3])
-                
+                self.setPinsByOne(self, steps/abs(steps))
                 #delay = self._delayMin + (self._delayMax-self._delayMin)*(self._K**-x+self._K**(x+1-abs(steps)))
-                
-                time.sleep(self._delay)
-
+                self.delaySec()
