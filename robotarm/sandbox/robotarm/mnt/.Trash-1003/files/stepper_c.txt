@@ -1,0 +1,41 @@
+//driving the stepper in C
+//to compile: g++ -std=c++0x stepper_c.cpp -ostepper_c
+//to run: ./stepper_c
+
+#include <iostream>
+#include <ctime>
+#include <list>
+
+int main()
+{
+	int stepnum = 2;
+	double steplist[] = {};
+	double min_speed = 10;
+	double max_speed = 3000;
+	double acceleration = max_speed/2;
+	double delay = 0
+}
+
+while (stepnum>0)
+{
+	double steplist[] = {0}
+	double current_speed = 0
+	std::cout<<"Enter step number:">> endl;
+	int stepnum = 0;
+	std::cin>>stepnum;
+	for (int accel_step=0; current_step<=stepnum; current_step++)
+	{
+		std::cout<<current_step<<endl;
+		current_speed+acceleration*delay>>current_speed;
+		if (current_speed>max_speed)
+		{
+			max_speed>>current_speed;
+			(1.0/current_speed)>>delay;
+			steplist.push_back(delay);
+			break
+			
+		(1.0/current_speed)>>delay;
+		steplist.push_back(delay);
+
+	return 0;
+}

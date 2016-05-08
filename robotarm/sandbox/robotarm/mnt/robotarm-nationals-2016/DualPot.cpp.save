@@ -1,0 +1,16 @@
+#include "Potentiometer.h"
+#include "DualPot.h"
+#include "Spi.h"
+
+DualPot::DualPot(int ch){//excecutes constructor of parent cl	this->_chPinPair = ch;
+	this->_internalOffset = 0;
+}
+
+int DualPot::getValue(void){
+	return spiReadADCDifferential(this->_chPinPair) + this->_internalOffset;
+}
+
+DualPot::~DualPot(void){
+
+}
+

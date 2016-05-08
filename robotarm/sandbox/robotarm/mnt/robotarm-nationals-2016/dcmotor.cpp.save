@@ -1,0 +1,49 @@
+#include "dcmotor.h"
+#include <wiringPi.h>
+#include <softPwm.h>
+
+
+dcmotor::dcmotor(int gpioF, int gpioB){
+	this->_gpioF = gpioF;
+	this->_gpioB = gpioB;
+	wiringPiSetupGpio();
+	pinMode(gpioF, OUTPUT);
+	pinMode(gpioB, OUTPUT);
+	softPwmCreate(gpioF, 0, 100);
+	softPwmCreate(gpioB, 0, 100);
+}
+
+dcmotor::~dcmotor(void){
+
+}
+		
+void dcmotor::forward(int dutyCycle){
+	softPwmWrite(this->_gpioF, dutyCycle);
+	softPwmWrite(this->_gpioB, 0);
+	//digitalWrite(this->_gpioF,1);
+	//digitalWrite(this->_gpioB,0);
+}
+
+void dcmotor::backward(int dutyCycle){
+	softPwmWrite(this->_gpioB, dutyCycle);
+	softPwmWrite(this->_gpioF, 0);
+
+	//digitalWrite(this->_gpioF,0);
+	//digitalWrite(this->_gpioB,1);
+}
+
+void dcmotor::stop(void){
+
+	softPwmWrite(this->_gpioF, 0);
+	softPwmWrite(this->_gpioB, 0);
+	
+	//digitalWrite(this->_gpioF,0);
+	//digitalWrite(this->_gpioB,0);
+	
+	//TODO: implement break pins here
+}
+
+
+
+
+

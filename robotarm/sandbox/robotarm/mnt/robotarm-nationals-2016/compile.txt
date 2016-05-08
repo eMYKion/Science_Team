@@ -1,0 +1,1 @@
+g++ -o test-integ-0 main.cpp dcmotor.cpp DualPot.cpp Potentiometer.cpp Spi.c Stepper.cpp -lwiringPi
